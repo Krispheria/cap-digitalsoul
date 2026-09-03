@@ -20,6 +20,7 @@ export function getFfmpegPath(): string {
 	}
 
 	const candidatePaths = [
+		process.env.FFMPEG_PATH,
 		ffmpegStaticPath,
 		resolve(process.cwd(), "node_modules/ffmpeg-static/ffmpeg"),
 		resolve(
@@ -28,7 +29,6 @@ export function getFfmpegPath(): string {
 		),
 		"/var/task/node_modules/ffmpeg-static/ffmpeg",
 		"/var/task/node_modules/.pnpm/ffmpeg-static@5.3.0/node_modules/ffmpeg-static/ffmpeg",
-		process.env.FFMPEG_PATH,
 		"/opt/homebrew/bin/ffmpeg",
 		"/usr/local/bin/ffmpeg",
 		"/usr/bin/ffmpeg",

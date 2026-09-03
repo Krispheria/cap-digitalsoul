@@ -92,7 +92,18 @@ function createServerEnv() {
 			ASSEMBLY_API_KEY: z.string().optional().describe("Audio transcription"),
 			ANTHROPIC_API_KEY: z.string().optional().describe("AI chat"),
 			OPENAI_API_KEY: z.string().optional().describe("AI summaries"),
-			GROQ_API_KEY: z.string().optional().describe("AI summaries"),
+			GROQ_API_KEY: z
+				.string()
+				.optional()
+				.describe("AI summaries and audio transcription"),
+			TRANSCRIPTION_PROVIDER: z
+				.union([z.literal("groq"), z.literal("assemblyai")])
+				.optional()
+				.describe("Audio transcription provider; defaults to groq when set"),
+			GROQ_TRANSCRIPTION_MODEL: z
+				.string()
+				.optional()
+				.describe("Groq Whisper model; defaults to whisper-large-v3"),
 			AI_PROVIDER: z
 				.union([
 					z.literal("assemblyai"),

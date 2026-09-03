@@ -38,6 +38,10 @@ import {
 } from "@/lib/edit-transcript";
 import { encryptEditTranscriptObject } from "@/lib/edit-transcript-storage";
 import { startAiGeneration } from "@/lib/generate-ai";
+import {
+	NoSpokenAudioError,
+	transcribeAudioWithGroq,
+} from "@/lib/groq-transcribe";
 import { getLiveTranscriptObjectKey } from "@/lib/live-transcribe-core";
 import {
 	checkHasAudioTrackViaMediaServer,
@@ -47,6 +51,10 @@ import {
 } from "@/lib/media-client";
 import { planSegmentsAudioExtraction } from "@/lib/segments-audio";
 import { downloadConcatenatedSegments } from "@/lib/segments-audio-download";
+import {
+	getGroqTranscriptionModel,
+	getTranscriptionProvider,
+} from "@/lib/transcription-provider";
 import { decodeStorageVideo } from "@/lib/video-storage";
 import { runWorkflowPromise } from "@/lib/workflow-runtime";
 
@@ -153,7 +161,7 @@ export async function transcribeVideoWorkflow(
 			};
 		}
 
-		const transcription = await transcribeWithAssemblyAI(
+		const transcription = await transcribeAudio(
 			audioUrl,
 			videoData.aiGenerationLanguage,
 			videoDurationMs,
@@ -212,7 +220,7 @@ export async function backfillEditTranscriptWorkflow(
 			return { success: false };
 		}
 
-		const editTranscript = await transcribeEditTranscriptWithAssemblyAI(
+		const editTranscript = await transcribeEditTranscript(
 			audioUrl,
 			videoEdit ? videoEdit.editSpec.sourceDuration : (video.duration ?? 0),
 		);
@@ -252,8 +260,8 @@ export async function backfillEditTranscriptWorkflow(
 async function validateVideo(videoId: string): Promise<VideoData> {
 	"use step";
 
-	if (!serverEnv().ASSEMBLY_API_KEY) {
-		throw new FatalError("Missing ASSEMBLY_API_KEY");
+	if (!getTranscriptionProvider()) {
+		throw new FatalError("Transcription provider not configured");
 	}
 
 	const query = await db()
@@ -327,8 +335,8 @@ async function validateEditTranscriptBackfill(
 ) {
 	"use step";
 
-	if (!serverEnv().ASSEMBLY_API_KEY) {
-		throw new FatalError("Missing ASSEMBLY_API_KEY");
+	if (!getTranscriptionProvider()) {
+		throw new FatalError("Transcription provider not configured");
 	}
 
 	const [video] = await db()
@@ -764,13 +772,7 @@ async function extractAudioFromSegmentsImpl(
 	}
 }
 
-async function transcribeWithAssemblyAI(
-	audioUrl: string,
-	language: AiGenerationLanguage,
-	videoDurationMs: number,
-): Promise<TranscriptionArtifacts> {
-	"use step";
-
+async function fetchAudioBuffer(audioUrl: string): Promise<Buffer> {
 	const audioResponse = await fetch(audioUrl);
 	if (!audioResponse.ok) {
 		throw new Error(
@@ -778,7 +780,95 @@ async function transcribeWithAssemblyAI(
 		);
 	}
 
-	const audioBuffer = Buffer.from(await audioResponse.arrayBuffer());
+	return Buffer.from(await audioResponse.arrayBuffer());
+}
+
+async function transcribeAudio(
+	audioUrl: string,
+	language: AiGenerationLanguage,
+	videoDurationMs: number,
+): Promise<TranscriptionArtifacts> {
+	"use step";
+
+	const provider = getTranscriptionProvider();
+	if (!provider) {
+		throw new FatalError("Transcription provider not configured");
+	}
+
+	const audioBuffer = await fetchAudioBuffer(audioUrl);
+	if (provider === "groq") {
+		return transcribeWithGroqImpl(audioBuffer, language, videoDurationMs);
+	}
+	return transcribeWithAssemblyAIImpl(audioBuffer, language, videoDurationMs);
+}
+
+async function transcribeEditTranscript(
+	audioUrl: string,
+	videoDurationSeconds: number,
+): Promise<string> {
+	"use step";
+
+	const provider = getTranscriptionProvider();
+	if (!provider) {
+		throw new FatalError("Transcription provider not configured");
+	}
+
+	const audioBuffer = await fetchAudioBuffer(audioUrl);
+	if (provider === "groq") {
+		const durationMs =
+			videoDurationSeconds > 0 ? videoDurationSeconds * 1000 : 0;
+		const artifacts = await transcribeWithGroqImpl(
+			audioBuffer,
+			"auto",
+			durationMs,
+		);
+		return artifacts.editTranscript;
+	}
+	return transcribeEditTranscriptWithAssemblyAIImpl(
+		audioBuffer,
+		videoDurationSeconds,
+	);
+}
+
+async function transcribeWithGroqImpl(
+	audioBuffer: Buffer,
+	language: AiGenerationLanguage,
+	videoDurationMs: number,
+): Promise<TranscriptionArtifacts> {
+	const model = getGroqTranscriptionModel();
+	let result: Awaited<ReturnType<typeof transcribeAudioWithGroq>>;
+	try {
+		result = await transcribeAudioWithGroq(audioBuffer, {
+			apiKey: serverEnv().GROQ_API_KEY as string,
+			model,
+			language,
+		});
+	} catch (error) {
+		if (error instanceof NoSpokenAudioError) {
+			throw new FatalError(error.message);
+		}
+		throw error;
+	}
+
+	console.log(
+		`[transcribe] Groq transcript model=${result.speech_model_used} chunks=${result.chunkCount} words=${result.words.length} synthesized=${result.synthesizedWords}`,
+	);
+
+	const durationMs =
+		videoDurationMs > 0 ? videoDurationMs : result.audioDurationMs;
+	const editTranscript = createEditTranscript(result, durationMs);
+
+	return {
+		vtt: editTranscriptWordsToCaptionVtt(editTranscript.words),
+		editTranscript: serializeEditTranscript(editTranscript),
+	};
+}
+
+async function transcribeWithAssemblyAIImpl(
+	audioBuffer: Buffer,
+	language: AiGenerationLanguage,
+	videoDurationMs: number,
+): Promise<TranscriptionArtifacts> {
 	const client = new AssemblyAI({
 		apiKey: serverEnv().ASSEMBLY_API_KEY as string,
 	});
@@ -818,20 +908,10 @@ async function transcribeWithAssemblyAI(
 	};
 }
 
-async function transcribeEditTranscriptWithAssemblyAI(
-	audioUrl: string,
+async function transcribeEditTranscriptWithAssemblyAIImpl(
+	audioBuffer: Buffer,
 	videoDurationSeconds: number,
 ): Promise<string> {
-	"use step";
-
-	const audioResponse = await fetch(audioUrl);
-	if (!audioResponse.ok) {
-		throw new Error(
-			`Audio URL not accessible: ${audioResponse.status} ${audioResponse.statusText}`,
-		);
-	}
-
-	const audioBuffer = Buffer.from(await audioResponse.arrayBuffer());
 	const client = new AssemblyAI({
 		apiKey: serverEnv().ASSEMBLY_API_KEY as string,
 	});

@@ -86,10 +86,11 @@ describe("transcribeVideo", () => {
 	});
 
 	describe("input validation", () => {
-		it("requires ASSEMBLY_API_KEY environment variable", async () => {
+		it("requires a configured transcription provider", async () => {
 			const { serverEnv } = await import("@cap/env");
 			vi.mocked(serverEnv).mockReturnValueOnce({
 				ASSEMBLY_API_KEY: undefined,
+				GROQ_API_KEY: undefined,
 			} as ReturnType<typeof serverEnv>);
 
 			const result = await transcribeVideo(
