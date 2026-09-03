@@ -54,8 +54,10 @@ export async function proxy(request: NextRequest) {
 	const hostname = url.hostname;
 
 	if (buildEnv.NEXT_PUBLIC_IS_CAP !== "true") {
+		const isStaticAsset = /\.[a-z0-9]+$/i.test(path);
 		if (
 			!(
+				isStaticAsset ||
 				path.startsWith("/s/") ||
 				path.startsWith("/c/") ||
 				path.startsWith("/cli/") ||
