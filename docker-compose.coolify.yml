@@ -31,6 +31,8 @@ services:
       MEDIA_SERVER_URL: 'http://media-server:3456'
       MEDIA_SERVER_WEBHOOK_SECRET: '${SERVICE_HEX_32_MEDIASERVER}'
       MEDIA_SERVER_WEBHOOK_URL: 'http://cap-web:3000'
+    expose:
+      - '3000'
     healthcheck:
       test:
         - CMD
@@ -49,6 +51,8 @@ services:
     environment:
       PORT: 3456
       MEDIA_SERVER_WEBHOOK_SECRET: '${SERVICE_HEX_32_MEDIASERVER}'
+    expose:
+      - '3456'
     healthcheck:
       test:
         - CMD
@@ -90,25 +94,27 @@ services:
   minio:
     image: 'minio/minio:latest'
     restart: unless-stopped
-    command: 'server /data --console-address ":9001"'
+    command: 'server /data --address ":9000" --console-address ":9001"'
     environment:
+      SERVICE_URL_MINIO_9000: ''
       MINIO_ROOT_USER: capadmin
       MINIO_ROOT_PASSWORD: '${SERVICE_PASSWORD_MINIO}'
-      SERVICE_URL_MINIO_9000: ''
+      MINIO_SERVER_URL: '${MINIO_SERVER_URL}'
+      MINIO_BROWSER_REDIRECT_URL: '${MINIO_BROWSER_REDIRECT_URL}'
+    expose:
+      - '9000'
+      - '9001'
     volumes:
       - 'cap-minio-data:/data'
     healthcheck:
       test:
-        - CMD
-        - mc
-        - ready
-        - local
+        - CMD-SHELL
+        - 'mc alias set health http://127.0.0.1:9000 capadmin "$${MINIO_ROOT_PASSWORD}" >/dev/null 2>&1 && mc ready health'
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
   minio-setup:
-    container_name: cap-minio-setup
     image: 'minio/mc:latest'
     exclude_from_hc: true
     depends_on:
