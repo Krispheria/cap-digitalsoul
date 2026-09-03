@@ -152,7 +152,9 @@ const expectChromeVisible = (container: HTMLElement) => {
 
 const expectChromeHidden = (container: HTMLElement) => {
 	expect(container.textContent).not.toContain("Test video");
-	expect(container.querySelector('[aria-label="Powered by DigitalSoul"]')).toBeNull();
+	expect(
+		container.querySelector('[aria-label="Powered by DigitalSoul"]'),
+	).toBeNull();
 };
 
 describe("EmbedVideo playback chrome", () => {
