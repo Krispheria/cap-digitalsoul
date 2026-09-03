@@ -26,6 +26,7 @@ import {
 import { toast } from "sonner";
 import { getOrganizationSSOData } from "@/actions/organization/get-organization-sso-data";
 import { trackEvent } from "@/app/utils/analytics";
+import { ForkCredit } from "@/components/ForkCredit";
 import { usePublicEnv } from "@/utils/public-env";
 import { getEmailCodeCooldownSeconds, requestEmailCode } from "../auth-email";
 import { getSafeNextPath } from "../safe-next";
@@ -302,14 +303,14 @@ export function LoginForm() {
 					layout="position"
 					className="text-2xl font-semibold text-gray-12"
 				>
-					Sign in to Cap
+					Sign in to DigitalSoul
 				</motion.h1>
 				<motion.p
 					key="subtitle"
 					layout="position"
 					className="text-[16px] text-gray-10"
 				>
-					Beautiful screen recordings, owned by you.
+					Graba, comparte y transcribe tus clases.
 				</motion.p>
 			</motion.div>
 			<motion.div layout="position" className="flex flex-col space-y-3">
@@ -433,29 +434,7 @@ export function LoginForm() {
 								)}
 							</motion.div>
 						</AnimatePresence>
-						<motion.p
-							layout="position"
-							className="pt-3 text-xs text-center text-gray-9"
-						>
-							By typing your email and clicking continue, you acknowledge that
-							you have both read and agree to Cap's{" "}
-							<Link
-								href="/terms"
-								target="_blank"
-								className="text-xs font-semibold text-gray-12 hover:text-blue-300"
-							>
-								Terms of Service
-							</Link>{" "}
-							and{" "}
-							<Link
-								href="/privacy"
-								target="_blank"
-								className="text-xs font-semibold text-gray-12 hover:text-blue-300"
-							>
-								Privacy Policy
-							</Link>
-							.
-						</motion.p>
+						<ForkCredit className="pt-3 text-xs text-center text-gray-9" />
 					</motion.div>
 				</Suspense>
 			</motion.div>

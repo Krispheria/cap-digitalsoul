@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { ForkCredit } from "@/components/ForkCredit";
 import { getSafeNextPath } from "../safe-next";
 
 export function VerifyOTPForm({
@@ -228,26 +229,7 @@ export function VerifyOTPForm({
 				</button>
 			</div>
 
-			<p className="mt-6 text-xs text-center text-gray-9">
-				By entering your email, you acknowledge that you have both read and
-				agree to Cap's{" "}
-				<Link
-					href="/terms"
-					target="_blank"
-					className="text-xs font-semibold text-gray-12 hover:text-blue-300"
-				>
-					Terms of Service
-				</Link>{" "}
-				and{" "}
-				<Link
-					href="/privacy"
-					target="_blank"
-					className="text-xs font-semibold text-gray-12 hover:text-blue-300"
-				>
-					Privacy Policy
-				</Link>
-				.
-			</p>
+			<ForkCredit className="mt-6 text-xs text-center text-gray-9" />
 		</motion.div>
 	);
 }

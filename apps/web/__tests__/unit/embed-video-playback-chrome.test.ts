@@ -146,13 +146,13 @@ const createProps = (
 const expectChromeVisible = (container: HTMLElement) => {
 	expect(container.textContent).toContain("Test video");
 	expect(
-		container.querySelector('[aria-label="Powered by Cap"]'),
+		container.querySelector('[aria-label="Powered by DigitalSoul"]'),
 	).not.toBeNull();
 };
 
 const expectChromeHidden = (container: HTMLElement) => {
 	expect(container.textContent).not.toContain("Test video");
-	expect(container.querySelector('[aria-label="Powered by Cap"]')).toBeNull();
+	expect(container.querySelector('[aria-label="Powered by DigitalSoul"]')).toBeNull();
 };
 
 describe("EmbedVideo playback chrome", () => {

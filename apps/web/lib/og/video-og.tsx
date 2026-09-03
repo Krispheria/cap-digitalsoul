@@ -1,3 +1,4 @@
+import { BRAND } from "@cap/utils";
 import { ImageResponse } from "next/og";
 import { loadOgFonts } from "@/lib/og/fonts";
 import {
@@ -160,7 +161,7 @@ const VideoCard = ({
 						color: "#6B7280",
 					}}
 				>
-					cap.so
+					{new URL(BRAND.appUrl).hostname}
 				</div>
 				<div style={{ display: "flex", flexGrow: 1 }} />
 				<div style={{ display: "flex", width: 52 }} />
@@ -356,7 +357,7 @@ const videoLayout = (video: VideoOgData) => (
 						color: OG_INK_SOFT,
 					}}
 				>
-					Watch on Cap.so
+					Watch on {BRAND.shortName}
 				</span>
 			</div>
 			<div style={{ display: "flex", flexShrink: 0 }}>
@@ -448,19 +449,19 @@ export async function renderVideoOg(variant: VideoOgVariant) {
 				return videoLayout(variant.video);
 			case "locked":
 				return statusLayout({
-					heading: "This Cap is private",
-					subline: "Ask the owner for access, or sign in to watch it on Cap.",
+					heading: "This video is private",
+					subline: `Ask the owner for access, or sign in to watch it on ${BRAND.shortName}.`,
 					fill: "lock",
 				});
 			case "password":
 				return statusLayout({
-					heading: "This Cap is password protected",
-					subline: "Enter the password on Cap to watch this recording.",
+					heading: "This video is password protected",
+					subline: `Enter the password on ${BRAND.shortName} to watch this recording.`,
 					fill: "lock",
 				});
 			case "not-found":
 				return statusLayout({
-					heading: "This Cap doesn't exist",
+					heading: "This video doesn't exist",
 					subline: "The recording you're looking for has moved or was deleted.",
 					fill: "logo",
 				});

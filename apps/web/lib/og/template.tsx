@@ -3,9 +3,10 @@ import type { CSSProperties, ReactNode } from "react";
 export const OG_WIDTH = 1200;
 export const OG_HEIGHT = 630;
 
-export const OG_BLUE = "#4785FF";
-export const OG_BLUE_DEEP = "#2E6FF2";
-export const OG_BLUE_LIGHT = "#ADC9FF";
+export const OG_BLUE = "#3D62E4";
+export const OG_BLUE_DEEP = "#2F4FCF";
+export const OG_BLUE_LIGHT = "#B9C6F5";
+export const OG_PURPLE = "#8F4FD9";
 /** Dark ink for text on the light sky — deep navy so it stays on-palette. */
 export const OG_INK = "#122142";
 export const OG_INK_SOFT = "rgba(18,33,66,0.74)";
@@ -217,19 +218,44 @@ export const SkyBackground = ({ children }: { children: ReactNode }) => (
 );
 
 // Exact mark geometry from packages/ui LogoBadge/Logo (viewBox 0 0 40 40):
-// concentric circles at (20,20), r 16 / 13 / 10. Returned as an array —
-// satori drops React fragments nested inside <svg>.
-const logoMark = () => [
-	<circle key="o" cx="20" cy="20" r="16" fill={OG_BLUE} />,
-	<circle key="m" cx="20" cy="20" r="13" fill={OG_BLUE_LIGHT} />,
-	<circle key="i" cx="20" cy="20" r="10" fill="white" />,
+// The DigitalSoul sphere: gradient disc with cut stripes. Returned as an
+// array — satori drops React fragments nested inside <svg>.
+const STRIPE_OFFSETS = [-12, -8, -4, 0, 4, 8, 12];
+
+const logoMark = (id: string) => [
+	<defs key="defs">
+		<linearGradient id={`${id}-g`} x1="0" y1="1" x2="1" y2="0">
+			<stop offset="0" stopColor={OG_BLUE} />
+			<stop offset="1" stopColor={OG_PURPLE} />
+		</linearGradient>
+	</defs>,
+	<circle key="disc" cx="20" cy="20" r="16" fill={`url(#${id}-g)`} />,
+	<g key="stripes" transform="rotate(-18 20 20)">
+		{STRIPE_OFFSETS.map((offset) => (
+			<rect
+				key={offset}
+				x="2"
+				y={20 + offset - 0.9}
+				width="36"
+				height="1.8"
+				rx="0.9"
+				fill="white"
+				opacity="0.92"
+			/>
+		))}
+	</g>,
+	<circle
+		key="ring"
+		cx="20"
+		cy="20"
+		r="16"
+		fill="none"
+		stroke="white"
+		strokeWidth="2.4"
+	/>,
 ];
 
-// The drawn "Cap" wordmark path from packages/ui Logo.tsx (viewBox 0 0 120 40).
-const WORDMARK_PATH =
-	"M58.416 30.448c-5.404 0-9.212-3.864-9.212-10.36 0-6.384 3.668-10.416 9.268-10.416 5.068 0 7.784 2.66 8.624 7.168l-3.808.196c-.476-2.604-2.072-4.2-4.816-4.2-3.388 0-5.488 2.828-5.488 7.252 0 4.48 2.156 7.196 5.46 7.196 2.94 0 4.508-1.708 4.956-4.564l3.808.196c-.784 4.676-3.752 7.532-8.792 7.532zm16.23-.112c-3.137 0-5.209-1.484-5.209-4.088 0-2.576 1.596-3.948 4.872-4.592l4.956-.98c0-2.1-.98-3.192-2.856-3.192-1.764 0-2.716.812-3.052 2.324l-3.668-.168c.588-3.136 2.996-4.928 6.72-4.928 4.256 0 6.44 2.24 6.44 6.216v5.432c0 .812.28 1.036.84 1.036h.476V30c-.224.056-.812.112-1.288.112-1.624 0-2.828-.588-3.136-2.436-.728 1.596-2.632 2.66-5.096 2.66zm.727-2.604c2.38 0 3.892-1.512 3.892-3.78v-.84l-3.864.784c-1.596.308-2.24.98-2.24 2.016 0 1.176.784 1.82 2.212 1.82zM86.874 34.2V15.048h3.444l.056 2.212c.868-1.652 2.52-2.548 4.48-2.548 4.256 0 6.356 3.5 6.356 7.812s-2.128 7.812-6.384 7.812c-1.904 0-3.556-.924-4.368-2.38V34.2h-3.584zm7.112-6.776c2.184 0 3.5-1.82 3.5-4.9s-1.316-4.9-3.5-4.9-3.528 1.652-3.528 4.9 1.316 4.9 3.528 4.9z";
-
-/** The Cap app icon — the real LogoBadge: white rounded square, mark at 80%. */
+/** The app icon — the real LogoBadge: white rounded square, mark at 80%. */
 export const CapAppIcon = ({ size }: { size: number }) => (
 	<div
 		style={flex({
@@ -241,18 +267,18 @@ export const CapAppIcon = ({ size }: { size: number }) => (
 	>
 		<svg
 			role="img"
-			aria-label="Cap"
+			aria-label="DigitalSoul"
 			width={size}
 			height={size}
 			viewBox="0 0 40 40"
 		>
 			<rect width="40" height="40" rx="8" fill="white" />
-			{logoMark()}
+			{logoMark(`icon-${size}`)}
 		</svg>
 	</div>
 );
 
-/** App icon + drawn "Cap" wordmark lockup (the brand OG header). */
+/** App icon + wordmark lockup (the brand OG header). */
 export const CapWordmark = ({
 	height = 60,
 	color = "white",
@@ -262,30 +288,42 @@ export const CapWordmark = ({
 }) => (
 	<div style={flex({ alignItems: "center", gap: Math.round(height * 0.28) })}>
 		<CapAppIcon size={height} />
-		<svg
-			role="img"
-			aria-label="Cap"
-			width={Math.round((height * 58) / 40)}
-			height={height}
-			viewBox="46 0 58 40"
+		<span
+			style={{
+				fontSize: Math.round(height * 0.62),
+				fontWeight: 700,
+				letterSpacing: -0.5,
+				color,
+			}}
 		>
-			<path fill={color} d={WORDMARK_PATH} />
-		</svg>
+			DigitalSoul
+		</span>
 	</div>
 );
 
 /** The in-app logo — bare mark + wordmark, as the main window renders it. */
 const CapFullLogo = ({ height, color }: { height: number; color: string }) => (
-	<svg
-		role="img"
-		aria-label="Cap"
-		width={Math.round((height * 104) / 40)}
-		height={height}
-		viewBox="0 0 104 40"
-	>
-		{logoMark()}
-		<path fill={color} d={WORDMARK_PATH} />
-	</svg>
+	<div style={flex({ alignItems: "center", gap: Math.round(height * 0.2) })}>
+		<svg
+			role="img"
+			aria-label="DigitalSoul"
+			width={height}
+			height={height}
+			viewBox="0 0 40 40"
+		>
+			{logoMark(`full-${height}`)}
+		</svg>
+		<span
+			style={{
+				fontSize: Math.round(height * 0.62),
+				fontWeight: 700,
+				letterSpacing: -0.5,
+				color,
+			}}
+		>
+			DigitalSoul
+		</span>
+	</div>
 );
 
 const Stroke = {

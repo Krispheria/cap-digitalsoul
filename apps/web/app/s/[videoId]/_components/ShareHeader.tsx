@@ -111,16 +111,6 @@ const DuplicateCapMenuItem = dynamic(() => import("./DuplicateCapMenuItem"), {
 });
 
 /**
- * Where a signed-out viewer can go next. Three, not the full site nav: this
- * shares the row with the video's title and has to stay out of its way.
- */
-const SIGNED_OUT_LINKS = [
-	{ label: "Download", href: "/download" },
-	{ label: "Blog", href: "/blog" },
-	{ label: "Pricing", href: "/pricing" },
-];
-
-/**
  * Shared by the heading and the rename field. Renaming is meant to read as a
  * caret appearing in the title, so both have to render the same glyphs at the
  * same size on the same baseline — the line heights are spelled out because a
@@ -129,7 +119,7 @@ const SIGNED_OUT_LINKS = [
 const TITLE_TEXT_CLASS =
 	"text-xl leading-7 font-normal sm:text-2xl sm:leading-8";
 
-const TITLE_PLACEHOLDER = "Cap title";
+const TITLE_PLACEHOLDER = "Video title";
 
 export const ShareHeader = ({
 	data,
@@ -628,20 +618,9 @@ export const ShareHeader = ({
 
 		return (
 			<nav
-				aria-label="Cap"
+				aria-label="DigitalSoul"
 				className="flex shrink-0 flex-wrap items-center justify-end gap-x-5 gap-y-2"
 			>
-				<div className="hidden items-center gap-5 md:flex">
-					{SIGNED_OUT_LINKS.map((link) => (
-						<a
-							key={link.href}
-							href={`${link.href}?ref=video_${data.id}`}
-							className="text-[13px] text-gray-10 transition-colors hover:text-gray-12"
-						>
-							{link.label}
-						</a>
-					))}
-				</div>
 				<div className="flex items-center gap-3">
 					<a
 						href="/login"
@@ -655,7 +634,7 @@ export const ShareHeader = ({
 						href={`/signup?ref=video_${data.id}`}
 						className="h-8 rounded-full px-3 text-xs"
 					>
-						Get Cap free
+						Create account
 					</Button>
 				</div>
 			</nav>
@@ -685,7 +664,7 @@ export const ShareHeader = ({
 								<Button
 									variant="gray"
 									size="xs"
-									aria-label="Hide Cap logo"
+									aria-label="Hide logo"
 									className="h-7 gap-1 whitespace-nowrap rounded-full px-2 text-[11px]"
 									disabled={isHidingBranding}
 									onClick={handleHideBranding}

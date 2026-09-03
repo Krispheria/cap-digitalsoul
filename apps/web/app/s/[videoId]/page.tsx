@@ -43,6 +43,7 @@ import {
 	getDashboardData,
 	type OrganizationSettings,
 } from "@/app/(org)/dashboard/dashboard-data";
+import { ForkCredit } from "@/components/ForkCredit";
 import { isAiConfigured } from "@/lib/ai/provider";
 import { completeDesktopSegmentsManifestAndQueue } from "@/lib/desktop-segments-recovery";
 import { createNotification } from "@/lib/Notification";
@@ -926,6 +927,7 @@ async function AuthorizedContent({
 				aiGenerationAvailable={aiGenerationEnabled && aiProviderAvailable}
 				transcriptionGenerationAvailable={transcriptionGenerationAvailable}
 			/>
+			<ForkCredit className="shrink-0 py-3 text-center text-xs text-gray-9" />
 		</div>
 	);
 }

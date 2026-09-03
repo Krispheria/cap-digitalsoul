@@ -1,5 +1,6 @@
 import "@/app/globals.css";
 import { buildEnv } from "@cap/env";
+import { BRAND } from "@cap/utils";
 import { OpenPanelComponent } from "@openpanel/nextjs";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
@@ -42,32 +43,31 @@ const defaultFont = localFont({
 	preload: false,
 });
 
+const BRAND_TITLE = `${BRAND.appName} — ${BRAND.tagline}`;
+
 export const metadata: Metadata = {
-	metadataBase: new URL("https://cap.so"),
-	title: "Cap — Beautiful screen recordings, owned by you.",
-	description:
-		"Cap is the open source alternative to Loom. Lightweight, powerful, and cross-platform. Record and share in seconds.",
+	metadataBase: new URL(BRAND.appUrl),
+	title: BRAND_TITLE,
+	description: BRAND.description,
 	openGraph: {
-		title: "Cap — Beautiful screen recordings, owned by you.",
-		description:
-			"Cap is the open source alternative to Loom. Lightweight, powerful, and cross-platform. Record and share in seconds.",
+		title: BRAND_TITLE,
+		description: BRAND.description,
 		type: "website",
-		url: "https://cap.so",
-		siteName: "Cap",
+		url: BRAND.appUrl,
+		siteName: BRAND.shortName,
 		images: [
 			{
 				url: "/api/og",
 				width: 1200,
 				height: 630,
-				alt: "Cap — Beautiful screen recordings, owned by you.",
+				alt: BRAND_TITLE,
 			},
 		],
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "Cap — Beautiful screen recordings, owned by you.",
-		description:
-			"Cap is the open source alternative to Loom. Lightweight, powerful, and cross-platform. Record and share in seconds.",
+		title: BRAND_TITLE,
+		description: BRAND.description,
 		images: ["/api/og"],
 	},
 };
@@ -97,9 +97,9 @@ export default function RootLayout({ children }: PropsWithChildren) {
 					href="/favicon-16x16.png"
 				/>
 				<link rel="manifest" href="/site.webmanifest" />
-				<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5" />
+				<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#3D62E4" />
 				<link rel="shortcut icon" href="/favicon.ico" />
-				<meta name="msapplication-TileColor" content="#da532c" />
+				<meta name="msapplication-TileColor" content="#3D62E4" />
 				<meta name="theme-color" content="#ffffff" />
 			</head>
 			<body suppressHydrationWarning>

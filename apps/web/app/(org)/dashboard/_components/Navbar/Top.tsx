@@ -9,6 +9,7 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@cap/ui";
+import { BRAND } from "@cap/utils";
 import { faBell } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -217,16 +218,16 @@ const User = () => {
 			{
 				name: "Chat Support",
 				icon: <MessageCircleMoreIcon />,
-				onClick: () => window.open("https://cap.link/discord", "_blank"),
+				onClick: () => window.open(BRAND.companyUrl, "_blank"),
 				iconClassName: "text-gray-11 group-hover:text-gray-12",
-				showCondition: true,
+				showCondition: false,
 			},
 			{
 				name: "Download App",
 				icon: <DownloadIcon />,
-				onClick: () => window.open("https://cap.so/download", "_blank"),
+				onClick: () => window.open(BRAND.companyUrl, "_blank"),
 				iconClassName: "text-gray-11 group-hover:text-gray-12",
-				showCondition: true,
+				showCondition: false,
 			},
 			{
 				name: themeLabel,

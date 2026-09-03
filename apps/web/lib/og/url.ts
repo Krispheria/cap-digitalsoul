@@ -2,6 +2,7 @@
 // (metadata consts and generateMetadata always run on the server): URLs are
 // HMAC-signed so third parties can't render arbitrary text via /api/og.
 
+import { BRAND } from "@cap/utils";
 import type { Metadata } from "next";
 import { signOgParams } from "@/lib/og/signature";
 
@@ -70,7 +71,7 @@ export const buildMarketingMetadata = ({
 			description,
 			type: "website",
 			...(path && { url: path }),
-			siteName: "Cap",
+			siteName: BRAND.shortName,
 			images: [image],
 		},
 		twitter: {

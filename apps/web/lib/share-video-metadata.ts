@@ -1,3 +1,4 @@
+import { BRAND } from "@cap/utils";
 import type { Metadata } from "next";
 
 const PLAYER_WIDTH = 1280;
@@ -86,8 +87,8 @@ export const buildShareVideoMetadata = ({
 		webUrl,
 		canonicalWebUrl,
 	});
-	const title = `${name} | Cap Recording`;
-	const description = "Watch this video on Cap";
+	const title = `${name} | ${BRAND.shortName}`;
+	const description = `Watch this video on ${BRAND.shortName}`;
 
 	return {
 		title,
@@ -120,7 +121,7 @@ export const buildShareVideoMetadata = ({
 		openGraph: {
 			type: "video.other",
 			url: urls.shareUrl,
-			siteName: "Cap",
+			siteName: BRAND.shortName,
 			title,
 			description,
 			ttl: 300,
