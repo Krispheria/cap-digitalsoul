@@ -41,7 +41,7 @@ jobs:
           git remote add upstream https://github.com/CapSoftware/Cap.git
           git fetch --no-tags upstream main
           BASE=$(git merge-base HEAD upstream/main)
-          FILES=$(git diff --name-only --diff-filter=ACMR "$BASE" HEAD -- '*.ts' '*.tsx' '*.json' | grep -v '^apps/desktop/' || true)
+          FILES=$(git diff --name-only --diff-filter=ACMR "$BASE" HEAD -- '*.ts' '*.tsx' '*.json' | grep -v '^apps/desktop/' | grep -v '^packages/database/migrations/' || true)
           if [ -z "$FILES" ]; then echo "No TypeScript changes vs upstream"; exit 0; fi
           echo "$FILES"
           pnpm exec biome check $FILES

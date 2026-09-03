@@ -8,7 +8,12 @@ import {
 	spaces,
 	spaceVideos,
 } from "@cap/database/schema";
-import { Organisation, type Space, type User, type Video } from "@cap/web-domain";
+import {
+	Organisation,
+	type Space,
+	type User,
+	type Video,
+} from "@cap/web-domain";
 import { and, eq, or } from "drizzle-orm";
 
 export type DefaultRecordingSpaceTarget =
