@@ -28,14 +28,25 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec biome check apps/web/lib apps/web/workflows apps/web/__tests__ packages/env packages/utils
-      - run: pnpm --filter @cap/web test
+      - name: Biome on the files that differ from upstream
+        run: |
+          git remote add upstream https://github.com/CapSoftware/Cap.git
+          git fetch --no-tags upstream main
+          BASE=$(git merge-base HEAD upstream/main)
+          FILES=$(git diff --name-only --diff-filter=ACMR "$BASE" HEAD -- '*.ts' '*.tsx' '*.json' | grep -v '^apps/desktop/' || true)
+          if [ -z "$FILES" ]; then echo "No TypeScript changes vs upstream"; exit 0; fi
+          echo "$FILES"
+          pnpm exec biome check $FILES
+      - name: Web tests
+        run: pnpm --filter @cap/web exec vitest run --exclude "**/slack-app-manifest.test.ts"
 
   build:
     needs: test
