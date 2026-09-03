@@ -892,7 +892,9 @@ const getFeedback = Effect.fn("Agent.getFeedback")(function* (
 				createdAt: Db.comments.createdAt,
 				updatedAt: Db.comments.updatedAt,
 				authorId: Db.comments.authorId,
-				authorName: Db.users.name,
+				authorName: sql<
+					string | null
+				>`COALESCE(${Db.users.name}, ${Db.comments.authorName})`,
 			})
 			.from(Db.comments)
 			.leftJoin(Db.users, eq(Db.comments.authorId, Db.users.id))

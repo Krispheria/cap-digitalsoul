@@ -20,6 +20,7 @@ import { Effect, Option } from "effect";
 import { Hono } from "hono";
 import { after } from "next/server";
 import { z } from "zod";
+import { addVideoToDefaultRecordingSpace } from "@/lib/default-recording-space";
 import { invalidateGoogleDriveStorageQuotaCache } from "@/lib/google-drive-storage-quota";
 import { maybeStartLiveTranscription } from "@/lib/live-transcribe";
 import { runPromise } from "@/lib/server";
@@ -327,6 +328,19 @@ app.get(
 					height,
 					fps,
 					...(metadata ? { metadata } : {}),
+				});
+
+			if (!isScreenshot)
+				await addVideoToDefaultRecordingSpace({
+					userId: user.id,
+					videoId: idToUse,
+					videoOrgId,
+					defaultSpaceId: user.preferences?.defaultSpaceId,
+				}).catch((error) => {
+					console.error(
+						"Failed to add recording to the user's default space:",
+						error,
+					);
 				});
 
 			const clientSupportsUploadProgress = isFromDesktopSemver(

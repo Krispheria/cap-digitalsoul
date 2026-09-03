@@ -23,6 +23,7 @@ import type { CommentType } from "../../../Share";
 import { ActivityComposer } from "./ActivityComposer";
 import CommentComponent from "./Comment";
 import EmptyState from "./EmptyState";
+import { readGuestName } from "./guest-name";
 
 export const Comments = Object.assign(
 	forwardRef<
@@ -37,6 +38,8 @@ export const Comments = Object.assign(
 			setShowAuthOverlay: (v: boolean) => void;
 			commentsDisabled: boolean;
 			ownerName?: string | null;
+			/** The viewer owns the video, so they can delete any comment on it. */
+			isVideoOwner?: boolean;
 			canRecordMedia?: boolean;
 		}
 	>((props, ref) => {
@@ -82,7 +85,8 @@ export const Comments = Object.assign(
 		);
 
 		const handleNewComment = async (content: string) => {
-			if (!user) return;
+			const guestName = user ? null : readGuestName();
+			if (!user && !guestName) return;
 
 			// Get current video time from the video element
 			const videoElement = document.querySelector("video") as HTMLVideoElement;
@@ -90,9 +94,9 @@ export const Comments = Object.assign(
 
 			const optimisticComment: CommentType = {
 				id: `temp-${Date.now()}` as Comment.CommentId,
-				authorId: user.id as User.UserId,
-				authorName: user?.name,
-				authorImage: user.imageUrl,
+				authorId: (user?.id as User.UserId | undefined) ?? null,
+				authorName: user ? user.name : guestName,
+				authorImage: user?.imageUrl ?? null,
 				content,
 				createdAt: new Date(),
 				videoId: props.videoId,
@@ -114,10 +118,11 @@ export const Comments = Object.assign(
 				const data = await newComment({
 					content,
 					videoId: props.videoId,
-					authorImage: user.imageUrl,
+					authorImage: user?.imageUrl ?? null,
 					parentCommentId: "" as Comment.CommentId,
 					type: "text",
 					timestamp: currentTime,
+					...(guestName ? { guestName } : {}),
 				});
 				handleCommentSuccess(data);
 			} catch (error) {
@@ -126,7 +131,8 @@ export const Comments = Object.assign(
 		};
 
 		const handleReply = async (content: string) => {
-			if (!replyingTo || !user) return;
+			const guestName = user ? null : readGuestName();
+			if (!replyingTo || (!user && !guestName)) return;
 
 			const videoElement = document.querySelector("video") as HTMLVideoElement;
 			const currentTime = videoElement?.currentTime || 0;
@@ -138,9 +144,9 @@ export const Comments = Object.assign(
 
 			const optimisticReply: CommentType = {
 				id: `temp-reply-${Date.now()}` as Comment.CommentId,
-				authorId: user.id,
-				authorName: user.name,
-				authorImage: user.imageUrl,
+				authorId: user?.id ?? null,
+				authorName: user ? user.name : guestName,
+				authorImage: user?.imageUrl ?? null,
 				content,
 				createdAt: new Date(),
 				videoId: props.videoId,
@@ -165,7 +171,8 @@ export const Comments = Object.assign(
 					parentCommentId: actualParentId,
 					type: "text",
 					timestamp: currentTime,
-					authorImage: user.imageUrl,
+					authorImage: user?.imageUrl ?? null,
+					...(guestName ? { guestName } : {}),
 				});
 
 				handleCommentSuccess(data);
@@ -240,7 +247,7 @@ export const Comments = Object.assign(
 								comment={comment}
 								replies={optimisticComments}
 								onReply={(id) => {
-									if (!user) {
+									if (!user && !readGuestName()) {
 										props.setShowAuthOverlay(true);
 									} else {
 										setReplyingTo(id);
@@ -250,6 +257,7 @@ export const Comments = Object.assign(
 								handleReply={handleReply}
 								onCancelReply={handleCancelReply}
 								onDelete={handleDeleteComment}
+								canModerate={props.isVideoOwner === true}
 								onSeek={onSeek}
 							/>
 						))}

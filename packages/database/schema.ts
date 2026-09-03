@@ -109,6 +109,7 @@ export const users = mysqlTable(
 				trackedEvents?: {
 					user_signed_up?: boolean;
 				};
+				defaultSpaceId?: Space.SpaceIdOrOrganisationId | null;
 			} | null>()
 			.default(null),
 		activeOrganizationId: nanoId(
@@ -532,7 +533,10 @@ export const comments = mysqlTable(
 		}).notNull(),
 		content: text("content").notNull(),
 		timestamp: float("timestamp"),
-		authorId: nanoId("authorId").notNull().$type<User.UserId>(),
+		// Null for a comment left by a viewer who is not signed in; `authorName`
+		// then carries the name they typed.
+		authorId: nanoIdNullable("authorId").$type<User.UserId>(),
+		authorName: varchar("authorName", { length: 255 }),
 		videoId: nanoId("videoId").notNull().$type<Video.VideoId>(),
 		createdAt: timestamp("createdAt").notNull().defaultNow(),
 		updatedAt: timestamp("updatedAt").notNull().defaultNow().onUpdateNow(),

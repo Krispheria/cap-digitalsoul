@@ -10,6 +10,7 @@ import { Comment, Policy, type Video } from "@cap/web-domain";
 import { eq } from "drizzle-orm";
 import { Effect, Exit } from "effect";
 import { revalidatePath } from "next/cache";
+import { normalizeGuestName } from "@/lib/guest-comment";
 import { createNotification } from "@/lib/Notification";
 import * as EffectRuntime from "@/lib/server";
 
@@ -20,11 +21,13 @@ export async function newComment(data: {
 	authorImage: ImageUpload.ImageUrl | null;
 	parentCommentId: Comment.CommentId;
 	timestamp: number | null;
+	guestName?: string;
 }) {
 	const user = await getCurrentUser();
+	const guestName = user ? null : normalizeGuestName(data.guestName);
 
-	if (!user) {
-		throw new Error("User not authenticated");
+	if (!user && !guestName) {
+		throw new Error("A name is required to comment");
 	}
 
 	const content = data.content;
@@ -72,7 +75,8 @@ export async function newComment(data: {
 
 	const newComment = {
 		id: id,
-		authorId: user.id,
+		authorId: user?.id ?? null,
+		authorName: guestName,
 		type: type,
 		content: content,
 		videoId: videoId,
@@ -87,23 +91,24 @@ export async function newComment(data: {
 
 	await db().insert(comments).values(newComment);
 
-	try {
-		await createNotification({
-			type: conditionalType,
-			videoId,
-			authorId: user.id,
-			comment: { id, content },
-			parentCommentId,
-		});
-	} catch (error) {
-		console.error("Failed to create notification:", error);
+	if (user) {
+		try {
+			await createNotification({
+				type: conditionalType,
+				videoId,
+				authorId: user.id,
+				comment: { id, content },
+				parentCommentId,
+			});
+		} catch (error) {
+			console.error("Failed to create notification:", error);
+		}
 	}
 
-	// Add author name to the returned data
 	const commentWithAuthor = {
 		...newComment,
-		authorName: user.name,
-		authorImage: data.authorImage,
+		authorName: user ? user.name : guestName,
+		authorImage: user ? data.authorImage : null,
 		sending: false,
 	};
 

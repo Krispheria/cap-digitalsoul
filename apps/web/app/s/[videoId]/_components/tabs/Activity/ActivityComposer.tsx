@@ -1,15 +1,18 @@
 "use client";
 
+import { Button, Input } from "@cap/ui";
 import type { Video } from "@cap/web-domain";
 import dynamic from "next/dynamic";
 import { useCallback, useState } from "react";
 import { useCurrentUser } from "@/app/Layout/AuthContext";
 import { SignedImageUrl } from "@/components/SignedImageUrl";
+import { GUEST_NAME_MAX_LENGTH } from "@/lib/guest-comment";
 import type { CommentType } from "../../../Share";
 import { RecordActionButtons } from "../../media-comment/record-actions";
 import { useOptionalPlayback } from "../../playback/PlaybackContext";
 import type { RecordIntentKind } from "../../timeline/TimelineComposer";
 import CommentInput from "./CommentInput";
+import { useGuestName } from "./guest-name";
 
 // Same deal as the timeline: capture and upload code only loads once someone
 // presses record.
@@ -47,6 +50,8 @@ export function ActivityComposer({
 	onCommentSuccess,
 }: ActivityComposerProps) {
 	const user = useCurrentUser();
+	const [guestName, setGuestName] = useGuestName();
+	const [nameDraft, setNameDraft] = useState("");
 	const playback = useOptionalPlayback();
 	const [recordIntent, setRecordIntent] = useState<{
 		kind: RecordIntentKind;
@@ -64,28 +69,69 @@ export function ActivityComposer({
 		[playback],
 	);
 
-	// Signed out: the same shape as the real composer rather than a solid
-	// sign-in bar, so the panel still opens on an invitation to write.
+	// Signed out and yet to say who they are: the recording is routinely shared
+	// with someone who has no account here, so a name is all we ask for.
+	if (!user && !guestName) {
+		return (
+			<form
+				className="flex flex-col gap-2 p-2 rounded-lg border bg-gray-1 border-gray-5"
+				onSubmit={(e) => {
+					e.preventDefault();
+					setGuestName(nameDraft);
+				}}
+			>
+				<p className="text-sm text-gray-11">
+					{ownerName
+						? `Add your name to respond to ${ownerName}`
+						: "Add your name to leave a comment"}
+				</p>
+				<div className="flex gap-2 items-center">
+					<Input
+						value={nameDraft}
+						onChange={(e) => setNameDraft(e.target.value)}
+						placeholder="Your name"
+						maxLength={GUEST_NAME_MAX_LENGTH}
+						aria-label="Your name"
+					/>
+					<Button
+						type="submit"
+						size="sm"
+						variant="dark"
+						disabled={nameDraft.trim().length === 0}
+					>
+						Continue
+					</Button>
+				</div>
+				<button
+					type="button"
+					onClick={() => setShowAuthOverlay(true)}
+					className="self-start text-xs font-medium text-blue-9"
+				>
+					Or sign in
+				</button>
+			</form>
+		);
+	}
+
 	if (!user) {
 		return (
-			<button
-				type="button"
-				onClick={() => setShowAuthOverlay(true)}
-				className="flex w-full items-center gap-2 p-2 text-left rounded-lg border transition-colors bg-gray-1 border-gray-5 hover:border-gray-6"
-			>
-				<span className="flex justify-center items-center rounded-full size-7 shrink-0 bg-gray-4 text-gray-10">
-					<svg viewBox="0 0 16 16" className="size-4 fill-current" aria-hidden>
-						<title>Viewer</title>
-						<path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 1.2c-2.6 0-4.8 1.5-4.8 3.3 0 .6.5 1 1.1 1h7.4c.6 0 1.1-.4 1.1-1 0-1.8-2.2-3.3-4.8-3.3Z" />
-					</svg>
-				</span>
-				<span className="flex-1 text-sm truncate text-gray-8">
-					{ownerName ? `Respond to ${ownerName}...` : "Leave a comment"}
-				</span>
-				<span className="text-xs font-medium shrink-0 text-blue-9">
-					Sign in
-				</span>
-			</button>
+			<CommentInput
+				collapsible
+				onSubmit={onSubmit}
+				disabled={disabled}
+				placeholder={
+					ownerName ? `Respond to ${ownerName}...` : "Leave a comment"
+				}
+				buttonLabel="Comment"
+				avatar={
+					<SignedImageUrl
+						image={null}
+						name={guestName ?? "You"}
+						className="size-7 rounded-full"
+						letterClass="text-[11px] font-medium"
+					/>
+				}
+			/>
 		);
 	}
 

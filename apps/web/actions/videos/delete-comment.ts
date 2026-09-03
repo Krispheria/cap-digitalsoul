@@ -2,7 +2,7 @@
 
 import { db } from "@cap/database";
 import { getCurrentUser } from "@cap/database/auth/session";
-import { comments, notifications } from "@cap/database/schema";
+import { comments, notifications, videos } from "@cap/database/schema";
 import { Storage, VideosRepo } from "@cap/web-backend";
 import type { Comment, Video } from "@cap/web-domain";
 import { and, eq, sql } from "drizzle-orm";
@@ -37,19 +37,27 @@ export async function deleteComment({
 		} | null = null;
 
 		await db().transaction(async (tx) => {
-			// First, verify the comment exists and belongs to the current user
+			// The video's owner can delete any comment on it, not just their own:
+			// a comment left by a signed-out viewer has no author who could.
 			const [existingComment] = await tx
 				.select({
 					id: comments.id,
 					videoId: comments.videoId,
+					authorId: comments.authorId,
 					mediaKey: comments.mediaKey,
 					mediaMeta: comments.mediaMeta,
+					videoOwnerId: videos.ownerId,
 				})
 				.from(comments)
-				.where(and(eq(comments.id, commentId), eq(comments.authorId, user.id)))
+				.innerJoin(videos, eq(videos.id, comments.videoId))
+				.where(eq(comments.id, commentId))
 				.limit(1);
 
-			if (!existingComment) {
+			if (
+				!existingComment ||
+				(existingComment.authorId !== user.id &&
+					existingComment.videoOwnerId !== user.id)
+			) {
 				throw new Error(
 					"Comment not found or you don't have permission to delete it",
 				);
@@ -65,9 +73,7 @@ export async function deleteComment({
 				};
 			}
 
-			await tx
-				.delete(comments)
-				.where(and(eq(comments.id, commentId), eq(comments.authorId, user.id)));
+			await tx.delete(comments).where(eq(comments.id, commentId));
 
 			// Delete related notifications
 			if (parentId) {

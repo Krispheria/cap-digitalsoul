@@ -74,6 +74,7 @@ export const Activity = Object.assign(
 							onSeek={props.onSeek}
 							commentsDisabled={commentsDisabled}
 							ownerName={ownerName}
+							isVideoOwner={isOwner}
 							canRecordMedia={canRecordMedia}
 						/>
 					)}

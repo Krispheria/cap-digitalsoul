@@ -11,8 +11,8 @@ import {
 	sessions,
 	users,
 } from "@cap/database/schema";
-import type { Organisation } from "@cap/web-domain";
-import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
+import type { Organisation, Space } from "@cap/web-domain";
+import { and, desc, eq, isNull, or, type SQL, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import {
 	agentScopeProfiles,
@@ -20,6 +20,7 @@ import {
 	hashAgentSecret,
 	isAgentScopeProfile,
 } from "@/lib/agent-auth";
+import { resolveDefaultRecordingSpace } from "@/lib/default-recording-space";
 import { isRateLimited, RATE_LIMIT_IDS } from "@/lib/rate-limit";
 
 export type CliApiKeySummary = {
@@ -37,6 +38,7 @@ export async function patchAccountSettings(
 	firstName?: string,
 	lastName?: string,
 	defaultOrgId?: Organisation.OrganisationId,
+	defaultSpaceId?: Space.SpaceIdOrOrganisationId | null,
 ) {
 	const currentUser = await getCurrentUser();
 	if (!currentUser) throw new Error("Unauthorized");
@@ -45,6 +47,7 @@ export async function patchAccountSettings(
 		name: string;
 		lastName: string;
 		defaultOrgId: Organisation.OrganisationId;
+		preferences: SQL;
 	}> = {};
 
 	if (firstName !== undefined) updatePayload.name = firstName;
@@ -81,12 +84,27 @@ export async function patchAccountSettings(
 		updatePayload.defaultOrgId = defaultOrgId;
 	}
 
+	if (defaultSpaceId !== undefined) {
+		if (
+			defaultSpaceId !== null &&
+			!(await resolveDefaultRecordingSpace(currentUser.id, defaultSpaceId))
+		)
+			throw new Error(
+				"Forbidden: User does not have access to the specified space",
+			);
+
+		// JSON_SET rather than rewriting `preferences`, so a concurrent
+		// notification save is not clobbered by this one.
+		updatePayload.preferences = sql`JSON_SET(COALESCE(${users.preferences}, JSON_OBJECT()), '$.defaultSpaceId', ${defaultSpaceId})`;
+	}
+
 	await db()
 		.update(users)
 		.set(updatePayload)
 		.where(eq(users.id, currentUser.id));
 
 	revalidatePath("/dashboard/settings/account");
+	revalidatePath("/dashboard");
 }
 
 export async function listCliApiKeys(): Promise<CliApiKeySummary[]> {

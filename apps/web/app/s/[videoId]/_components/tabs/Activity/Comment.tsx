@@ -28,6 +28,7 @@ const CommentComponent: React.FC<{
 		commentId: Comment.CommentId,
 		parentId: Comment.CommentId | null,
 	) => void;
+	canModerate?: boolean;
 	level?: number;
 	onSeek?: (time: number) => void;
 }> = ({
@@ -38,12 +39,14 @@ const CommentComponent: React.FC<{
 	handleReply,
 	onCancelReply,
 	onDelete,
+	canModerate = false,
 	level = 0,
 	onSeek,
 }) => {
 	const user = useCurrentUser();
 	const isReplying = replyingToId === comment.id;
-	const isOwnComment = user?.id === comment.authorId;
+	const canDelete =
+		canModerate || (comment.authorId !== null && user?.id === comment.authorId);
 	const commentParams = useSearchParams().get("comment");
 	const replyParams = useSearchParams().get("reply");
 	const nestedReplies =
@@ -164,7 +167,7 @@ const CommentComponent: React.FC<{
 								/>
 							</Tooltip>
 						)}
-						{isOwnComment && (
+						{canDelete && (
 							<Tooltip content="Delete comment">
 								<Button
 									onClick={handleDelete}
@@ -205,6 +208,7 @@ const CommentComponent: React.FC<{
 							handleReply={handleReply}
 							onCancelReply={onCancelReply}
 							onDelete={onDelete}
+							canModerate={canModerate}
 							level={1}
 							onSeek={onSeek}
 						/>

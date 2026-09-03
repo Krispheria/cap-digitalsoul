@@ -13,7 +13,7 @@ import {
 	Input,
 	Select,
 } from "@cap/ui";
-import { type ImageUpload, Organisation } from "@cap/web-domain";
+import { type ImageUpload, Organisation, type Space } from "@cap/web-domain";
 import { useMutation } from "@tanstack/react-query";
 import { Effect, Option } from "effect";
 import { LogOut } from "lucide-react";
@@ -28,14 +28,20 @@ import { useDashboardContext } from "../../Contexts";
 import { ProfileImage } from "./components/ProfileImage";
 import { patchAccountSettings, signOutAllDevices } from "./server";
 
+const NO_DEFAULT_SPACE = "none";
+
 export const Settings = () => {
 	const router = useRouter();
-	const { organizationData, user } = useDashboardContext();
+	const { organizationData, spacesData, user, userPreferences } =
+		useDashboardContext();
 	const [firstName, setFirstName] = useState(user?.name || "");
 	const [lastName, setLastName] = useState(user?.lastName || "");
 	const [defaultOrgId, setDefaultOrgId] = useState<
 		Organisation.OrganisationId | undefined
 	>(user?.defaultOrgId || undefined);
+	const savedDefaultSpaceId = userPreferences?.defaultSpaceId ?? null;
+	const [defaultSpaceId, setDefaultSpaceId] =
+		useState<Space.SpaceIdOrOrganisationId | null>(savedDefaultSpaceId);
 	const [signOutAllDevicesOpen, setSignOutAllDevicesOpen] = useState(false);
 	const firstNameId = useId();
 	const lastNameId = useId();
@@ -62,7 +68,8 @@ export const Settings = () => {
 	const hasChanges =
 		firstName !== (user?.name || "") ||
 		lastName !== (user?.lastName || "") ||
-		defaultOrgId !== user?.defaultOrgId;
+		defaultOrgId !== user?.defaultOrgId ||
+		defaultSpaceId !== savedDefaultSpaceId;
 
 	const { mutate: updateName, isPending: updateNamePending } = useMutation({
 		mutationFn: async () => {
@@ -70,14 +77,15 @@ export const Settings = () => {
 				firstName.trim(),
 				lastName.trim() ? lastName.trim() : undefined,
 				defaultOrgId,
+				defaultSpaceId,
 			);
 		},
 		onSuccess: () => {
-			toast.success("Name updated successfully");
+			toast.success("Account settings updated");
 			router.refresh();
 		},
 		onError: () => {
-			toast.error("Failed to update name");
+			toast.error("Failed to update account settings");
 		},
 	});
 
@@ -276,6 +284,34 @@ export const Settings = () => {
 									/>
 								),
 							}))}
+						/>
+					</Card>
+					<Card className="flex flex-col gap-4">
+						<div className="space-y-1">
+							<CardTitle>Default space for recordings</CardTitle>
+							<CardDescription>
+								Caps you record are added to this space automatically. Automatic
+								leaves them out of every space, as before.
+							</CardDescription>
+						</div>
+
+						<Select
+							placeholder="Automatic"
+							value={defaultSpaceId ?? NO_DEFAULT_SPACE}
+							onValueChange={(value) =>
+								setDefaultSpaceId(
+									value === NO_DEFAULT_SPACE
+										? null
+										: (value as Space.SpaceIdOrOrganisationId),
+								)
+							}
+							options={[
+								{ value: NO_DEFAULT_SPACE, label: "Automatic (no space)" },
+								...(spacesData || []).map((space) => ({
+									value: space.id,
+									label: space.name,
+								})),
+							]}
 						/>
 					</Card>
 				</div>

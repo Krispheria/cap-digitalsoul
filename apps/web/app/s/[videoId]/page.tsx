@@ -66,7 +66,6 @@ import {
 } from "@/lib/social-crawlers";
 import { transcribeVideo } from "@/lib/transcribe";
 import { isTranscriptionConfigured } from "@/lib/transcription-provider";
-import { canUserDownloadVideo } from "@/lib/video-download-permissions";
 import {
 	isEditSourceKey,
 	reconcileStaleEditUpload,
@@ -651,7 +650,9 @@ async function AuthorizedContent({
 						mediaKey: comments.mediaKey,
 						mediaDuration: comments.mediaDuration,
 						mediaMeta: comments.mediaMeta,
-						authorName: users.name,
+						authorName: sql<
+							string | null
+						>`COALESCE(${users.name}, ${comments.authorName})`,
 						authorImage: users.image,
 					})
 					.from(comments)
@@ -723,14 +724,10 @@ async function AuthorizedContent({
 	const isVideoDownloadReady =
 		!hasActiveUpload && video.source?.type !== "desktopSegments";
 
-	const canDownloadVideoPromise =
-		userId && isVideoDownloadReady
-			? canUserDownloadVideo({
-					userId,
-					ownerId: video.owner.id,
-					videoId,
-				})
-			: Promise.resolve(false);
+	// Reaching AuthorizedContent is itself the permission check: it only renders
+	// once VideosPolicy.canView passed, password included. Signed-out viewers get
+	// the download too, and getVideoDownloadInfo re-runs the gate server-side.
+	const canDownloadVideoPromise = Promise.resolve(isVideoDownloadReady);
 
 	const videoHasEditsPromise = canDownloadVideoPromise.then((canDownload) => {
 		if (!canDownload || video.isScreenshot) return false;

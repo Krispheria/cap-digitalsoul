@@ -1972,7 +1972,9 @@ const getComments = Effect.fn("Mobile.getComments")(function* (
 				createdAt: Db.comments.createdAt,
 				updatedAt: Db.comments.updatedAt,
 				authorId: Db.comments.authorId,
-				authorName: Db.users.name,
+				authorName: sql<
+					string | null
+				>`COALESCE(${Db.users.name}, ${Db.comments.authorName})`,
 				authorImage: Db.users.image,
 				authorPreferences: Db.users.preferences,
 			})
@@ -1995,7 +1997,7 @@ const getComments = Effect.fn("Mobile.getComments")(function* (
 	);
 	const visibleRows = rows.filter(
 		(row) =>
-			!blockedUserIds.includes(row.authorId) &&
+			(row.authorId === null || !blockedUserIds.includes(row.authorId)) &&
 			!getBlockedUserIds(row.authorPreferences).includes(user.id),
 	);
 

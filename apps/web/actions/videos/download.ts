@@ -10,6 +10,7 @@ import { Effect } from "effect";
 import { runPromise } from "@/lib/server";
 import { canUserDownloadVideo } from "@/lib/video-download-permissions";
 import { decodeStorageVideo } from "@/lib/video-storage";
+import { canViewerOpenVideo } from "@/lib/video-view-access";
 
 export type VideoDownloadVariant = "current" | "original";
 export type VideoDownloadInfo =
@@ -75,7 +76,7 @@ export async function getVideoDownloadInfo(
 	variant: VideoDownloadVariant = "current",
 ): Promise<VideoDownloadInfo> {
 	const user = await getCurrentUser();
-	if (!user || !videoId) {
+	if (!videoId) {
 		throw new Error("Missing required data for downloading video");
 	}
 
@@ -86,11 +87,17 @@ export async function getVideoDownloadInfo(
 
 	if (!video) throw new Error("Video not found");
 
-	const allowed = await canUserDownloadVideo({
-		userId: user.id,
-		ownerId: video.ownerId,
-		videoId,
-	});
+	// Download is deliberately as wide as view, signed out included: recordings
+	// are handed to editors with no account here. canViewerOpenVideo is the
+	// player's own gate, so privacy, email restrictions and passwords still hold.
+	const allowed =
+		(user &&
+			(await canUserDownloadVideo({
+				userId: user.id,
+				ownerId: video.ownerId,
+				videoId,
+			}))) ||
+		(await canViewerOpenVideo(videoId));
 
 	if (!allowed) {
 		throw new Error("You don't have permission to download this video");
