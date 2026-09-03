@@ -983,7 +983,7 @@ export const ShareHeader = ({
 								{(user || data.public) && renderShareButton()}
 							</div>
 						</div>
-						{user !== null && (
+						{(user !== null || canDownload) && (
 							// `ml-auto` rather than relying on the parent's justify-between:
 							// when this wraps onto its own line on a phone, a lone flex item
 							// would otherwise sit left, orphaned under the byline.
@@ -1183,15 +1183,17 @@ export const ShareHeader = ({
 													Download
 												</Button>
 											))}
-										<Button
-											size="xs"
-											className="h-8 rounded-full px-2.5 text-xs"
-											onClick={() => {
-												push("/dashboard/caps?page=1");
-											}}
-										>
-											Go to dashboard
-										</Button>
+										{user !== null && (
+											<Button
+												size="xs"
+												className="h-8 rounded-full px-2.5 text-xs"
+												onClick={() => {
+													push("/dashboard/caps?page=1");
+												}}
+											>
+												Go to dashboard
+											</Button>
+										)}
 									</>
 								)}
 							</div>
