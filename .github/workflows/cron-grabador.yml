@@ -1,0 +1,40 @@
+name: Cron (DigitalSoul self-host)
+
+# Cap Cloud runs these endpoints from Vercel Cron. A self-hosted instance has
+# nothing calling them, so a recording whose processing dies stays dead: no
+# retry, no mux, no transcription. This workflow is that missing scheduler.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: cron-grabador
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Recover failed and stalled video processing
+        env:
+          URL: ${{ secrets.GRABADOR_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -u
+          for endpoint in recover-failed-video-processing finalize-stale-desktop-segments; do
+            echo "== $endpoint"
+            code=$(curl -sS -o body.json -w '%{http_code}' \
+              --max-time 300 \
+              -H "Authorization: Bearer $CRON_SECRET" \
+              "$URL/api/cron/$endpoint" || echo "000")
+            echo "HTTP $code"
+            head -c 2000 body.json || true
+            echo
+            # A failure here must not mask the other endpoint, and a single bad
+            # run is not worth a red build: the next tick retries in 10 minutes.
+            if [ "$code" != "200" ]; then
+              echo "::warning::$endpoint returned $code"
+            fi
+          done
